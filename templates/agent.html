@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Assistant - AI Agent</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card-bg: #1a1f2e;
+      --border: #2d3748;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --search-accent: #f59e0b;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--card-bg);
+      border-bottom: 2px solid var(--border);
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .main-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .panel:last-child {
+      border-right: none;
+    }
+
+    .panel-header {
+      background: var(--card-bg);
+      padding: 16px 20px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .panel-icon {
+      font-size: 20px;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message {
+      display: flex;
+      gap: 12px;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.user {
+      flex-direction: row-reverse;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .message.user .avatar {
+      background: #3b82f6;
+    }
+
+    .message.ai .avatar {
+      background: var(--accent);
+    }
+
+    .message.search .avatar {
+      background: var(--search-accent);
+    }
+
+    .message-content {
+      max-width: 75%;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .message.user .message-content {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: #3b82f6;
+    }
+
+    .message.ai .message-content {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent);
+    }
+
+    .message.search .message-content {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: var(--search-accent);
+    }
+
+    .recipe-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 13px;
+    }
+
+    .recipe-card:hover {
+      border-color: var(--search-accent);
+      transform: translateX(3px);
+    }
+
+    .recipe-name {
+      font-weight: 600;
+      color: var(--search-accent);
+      margin-bottom: 6px;
+    }
+
+    .recipe-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .input-container {
+      background: var(--card-bg);
+      border-top: 2px solid var(--border);
+      padding: 16px;
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      transition: all 0.2s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+
+    .panel.search input:focus {
+      border-color: var(--search-accent);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    }
+
+    button {
+      padding: 12px 24px;
+      cursor: pointer;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .btn-agent {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-agent:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-search {
+      background: var(--search-accent);
+      color: white;
+    }
+
+    .btn-search:hover:not(:disabled) {
+      background: #d97706;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+
+    .suggestion-chip {
+      padding: 6px 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .suggestion-chip:hover {
+      border-color: var(--accent);
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .recipe-form {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--muted);
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--card-bg);
+      color: var(--text);
+      font-family: inherit;
+    }
+
+    .form-group textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .btn-submit {
+      flex: 1;
+      background: var(--accent);
+      color: white;
+      padding: 10px;
+      font-size: 13px;
+    }
+
+    .btn-cancel {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 16px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1024px) {
+      .main-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
+      }
+
+      .panel {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .panel:last-child {
+        border-bottom: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🍳 Recipe Assistant - AI Agent</h1>
+    <p class="subtitle">Search recipes & manage your database with AI</p>
+  </header>
+
+  <div class="main-container">
+    <!-- RAG Search Panel -->
+    <div class="panel search">
+      <div class="panel-header">
+        <span class="panel-icon">🔍</span>
+        <span class="panel-title">Recipe Search (RAG)</span>
+      </div>
+      <div class="messages" id="search-messages">
+        <div class="empty-state">
+          <div class="empty-state-icon">🥘</div>
+          <p>Search for recipes</p>
+          <div class="suggestions">
+            <div class="suggestion-chip" onclick="searchSuggestion('spicy chicken')">Spicy chicken</div>
+            <div class="suggestion-chip" onclick="searchSuggestion('pasta')">Pasta</div>
+            <div class="suggestion-chip" onclick="searchSuggestion('dessert')">Dessert</div>
+          </div>
+        </div>
+      </div>
+      <div class="input-container">
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="search-query" 
+            placeholder="Search for recipes..."
+            onkeypress="if(event.key==='Enter') searchRecipes()"
+          >
+          <button class="btn-search" onclick="searchRecipes()" id="search-btn">Search</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Agent Panel -->
+    <div class="panel agent">
+      <div class="panel-header">
+        <span class="panel-icon">🤖</span>
+        <span class="panel-title">AI Agent</span>
+      </div>
+      <div class="messages" id="agent-messages">
+        <div class="empty-state">
+          <div class="empty-state-icon">💬</div>
+          <p>Ask me anything about recipes</p>
+          <div class="suggestions">
+            <div class="suggestion-chip" onclick="agentSuggestion('What ingredients are in carbonara?')">Ingredient info</div>
+            <div class="suggestion-chip" onclick="agentSuggestion('I want to add a new recipe')">Add recipe</div>
+            <div class="suggestion-chip" onclick="agentSuggestion('How do I make risotto?')">Get help</div>
+          </div>
+        </div>
+      </div>
+      <div class="input-container">
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="agent-query" 
+            placeholder="Ask the AI agent..."
+            onkeypress="if(event.key==='Enter') sendToAgent()"
+          >
+          <button class="btn-agent" onclick="sendToAgent()" id="agent-btn">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const searchMessages = document.getElementById('search-messages');
+    const agentMessages = document.getElementById('agent-messages');
+    const searchQuery = document.getElementById('search-query');
+    const agentQuery = document.getElementById('agent-query');
+    const searchBtn = document.getElementById('search-btn');
+    const agentBtn = document.getElementById('agent-btn');
+
+    function clearEmptyState(container) {
+      const emptyState = container.querySelector('.empty-state');
+      if (emptyState) emptyState.remove();
+    }
+
+    function addMessage(container, text, type) {
+      clearEmptyState(container);
+      const message = document.createElement('div');
+      message.className = `message ${type}`;
+      
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = type === 'user' ? '👤' : (type === 'search' ? '🔍' : '🤖');
+      
+      const content = document.createElement('div');
+      content.className = 'message-content';
+      content.innerHTML = text;
+      
+      message.appendChild(avatar);
+      message.appendChild(content);
+      container.appendChild(message);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function searchSuggestion(text) {
+      searchQuery.value = text;
+      searchRecipes();
+    }
+
+    function agentSuggestion(text) {
+      agentQuery.value = text;
+      sendToAgent();
+    }
+
+    function formatRecipeResults(results) {
+      if (results.length === 0) {
+        return '<p>No recipes found. Try a different search!</p>';
+      }
+
+      let html = `<p>Found ${results.length} recipe${results.length > 1 ? 's' : ''}:</p>`;
+      
+      results.forEach(recipe => {
+        html += `
+          <div class="recipe-card">
+            <div class="recipe-name">${recipe.name}</div>
+            <div class="recipe-meta">
+              <span>🌍 ${recipe.country || 'Unknown'}</span>
+              ${recipe.region ? `<span>📍 ${recipe.region}</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+      
+      return html;
+    }
+
+    function showRecipeForm() {
+      return `
+        <p>Please provide the recipe details:</p>
+        <div class="recipe-form">
+          <div class="form-group">
+            <label>Recipe Name</label>
+            <input type="text" id="recipe-name" placeholder="e.g. Spaghetti Carbonara">
+          </div>
+          <div class="form-group">
+            <label>Country</label>
+            <input type="text" id="recipe-country" placeholder="e.g. Italy">
+          </div>
+          <div class="form-group">
+            <label>Ingredients</label>
+            <textarea id="recipe-ingredients" placeholder="List ingredients with measures..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Instructions</label>
+            <textarea id="recipe-instructions" placeholder="Step by step instructions..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn-submit" onclick="submitRecipe()">Submit Recipe</button>
+            <button class="btn-cancel" onclick="cancelRecipe()">Cancel</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function searchRecipes() {
+      const query = searchQuery.value.trim();
+      if (!query) return;
+
+      addMessage(searchMessages, query, 'user');
+      searchQuery.value = '';
+      searchBtn.disabled = true;
+
+      try {
+        const response = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, top_k: 5 })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          addMessage(searchMessages, formatRecipeResults(data.results), 'search');
+        } else {
+          addMessage(searchMessages, `❌ Error: ${data.error}`, 'search');
+        }
+      } catch (error) {
+        addMessage(searchMessages, `❌ Connection error: ${error.message}`, 'search');
+      } finally {
+        searchBtn.disabled = false;
+        searchQuery.focus();
+      }
+    }
+
+    async function sendToAgent() {
+      const query = agentQuery.value.trim();
+      if (!query) return;
+
+      addMessage(agentMessages, query, 'user');
+      agentQuery.value = '';
+      agentBtn.disabled = true;
+
+      try {
+        // Check if user wants to add a recipe
+        if (query.toLowerCase().includes('add') && query.toLowerCase().includes('recipe')) {
+          addMessage(agentMessages, showRecipeForm(), 'ai');
+          agentBtn.disabled = false;
+          agentQuery.focus();
+          return;
+        }
+
+        const response = await fetch('/api/agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          addMessage(agentMessages, data.response, 'ai');
+        } else {
+          addMessage(agentMessages, `❌ Error: ${data.error}`, 'ai');
+        }
+      } catch (error) {
+        addMessage(agentMessages, `❌ Connection error: ${error.message}`, 'ai');
+      } finally {
+        agentBtn.disabled = false;
+        agentQuery.focus();
+      }
+    }
+
+    async function submitRecipe() {
+      const name = document.getElementById('recipe-name').value;
+      const country = document.getElementById('recipe-country').value;
+      const ingredients = document.getElementById('recipe-ingredients').value;
+      const instructions = document.getElementById('recipe-instructions').value;
+
+      if (!name || !country || !ingredients || !instructions) {
+        alert('Please fill all fields');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/insert-recipe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, country, ingredients, instructions })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          addMessage(agentMessages, '✅ Recipe added successfully!', 'ai');
+        } else {
+          addMessage(agentMessages, `❌ Error: ${data.error}`, 'ai');
+        }
+      } catch (error) {
+        addMessage(agentMessages, `❌ Connection error: ${error.message}`, 'ai');
+      }
+    }
+
+    function cancelRecipe() {
+      addMessage(agentMessages, 'Recipe insertion cancelled.', 'ai');
+    }
+
+    // Focus inputs on load
+    searchQuery.focus();
+  </script>
+</body>
+</html>

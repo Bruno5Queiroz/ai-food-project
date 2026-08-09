@@ -1,0 +1,42 @@
+# Databricks Job Configuration - Pipeline Merge
+# Executes every 15 days (on days 1 and 16 of each month)
+
+resources:
+  jobs:
+    pipeline_merge_job:
+      name: "Pipeline Merge - Bi-Monthly Execution"
+      
+      schedule:
+        quartz_cron_expression: "0 0 0 1,16 * ?"
+        timezone_id: "America/Sao_Paulo"
+        pause_status: "UNPAUSED"
+      
+      tasks:
+        - task_key: "run_pipeline_merge"
+          notebook_task:
+            notebook_path: "/Users/databugre5@gmail.com/Project/Pipeline_Merge"
+            source: "WORKSPACE"
+          
+          new_cluster:
+            spark_version: "15.4.x-scala2.12"
+            node_type_id: "i3.xlarge"
+            num_workers: 2
+            spark_conf:
+              "spark.databricks.cluster.profile": "serverless"
+          
+          timeout_seconds: 3600
+          max_retries: 2
+          retry_on_timeout: true
+      
+      email_notifications:
+        on_failure:
+          - "databugre5@gmail.com"
+        on_success:
+          - "databugre5@gmail.com"
+      
+      max_concurrent_runs: 1
+      
+      tags:
+        project: "food_project"
+        schedule: "bi-monthly"
+        notebook: "pipeline_merge"

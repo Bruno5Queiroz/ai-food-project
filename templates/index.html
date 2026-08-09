@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Recipe Browser - Databricks</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card-bg: #1a1f2e;
+      --border: #2d3748;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #f59e0b;
+      --accent-hover: #d97706;
+      --success: #10b981;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      padding: 40px 0;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin: 30px 0;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 30px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .search-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 30px;
+      margin-bottom: 40px;
+    }
+
+    .search-form {
+      display: flex;
+      gap: 12px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      background: var(--bg);
+      color: var(--text);
+      transition: all 0.2s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    }
+
+    button {
+      padding: 14px 28px;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      background: var(--accent);
+      color: white;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .ai-chat-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 20px 32px;
+      margin: 24px 0;
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      color: white;
+      text-decoration: none;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      border-radius: 16px;
+      border: 2px solid transparent;
+      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35), 0 0 0 0 rgba(139, 92, 246, 0.4);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ai-chat-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .ai-chat-btn:hover::before {
+      width: 400px;
+      height: 400px;
+    }
+
+    .ai-chat-btn:hover {
+      background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 32px rgba(139, 92, 246, 0.45), 0 0 0 4px rgba(139, 92, 246, 0.2);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .ai-chat-btn:active {
+      transform: translateY(-2px) scale(1.01);
+    }
+
+    .ai-chat-btn-icon {
+      font-size: 28px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+
+    .filters {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 8px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .filter-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .recipes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 30px;
+    }
+
+    .recipe-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .recipe-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+      border-color: var(--accent);
+    }
+
+    .recipe-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background: var(--border);
+    }
+
+    .recipe-content {
+      padding: 20px;
+    }
+
+    .recipe-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .recipe-meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .recipe-tag {
+      background: rgba(245, 158, 11, 0.2);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    /* Recipe Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+
+    .modal.show {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      max-width: 800px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      padding: 30px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--card-bg);
+      z-index: 10;
+    }
+
+    .modal-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .modal-body {
+      padding: 30px;
+    }
+
+    .close-modal {
+      float: right;
+      font-size: 32px;
+      cursor: pointer;
+      color: var(--muted);
+      line-height: 1;
+    }
+
+    .close-modal:hover {
+      color: var(--text);
+    }
+
+    .ingredients-list {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .ingredient-item {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ingredient-item:last-child {
+      border-bottom: none;
+    }
+
+    .instructions {
+      line-height: 1.8;
+      color: var(--muted);
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .recipes-grid {
+        grid-template-columns: 1fr;
+      }
+      h1 {
+        font-size: 32px;
+      }
+      .search-form {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🍽️ Food Recipe Browser</h1>
+      <p class="subtitle">Explore delicious recipes from around the world</p>
+      
+      <div class="stats" id="stats">
+        <div class="stat-card">
+          <div class="stat-number" id="stat-recipes">-</div>
+          <div class="stat-label">Recipes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-categories">-</div>
+          <div class="stat-label">Categories</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-countries">-</div>
+          <div class="stat-label">Countries</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="search-section">
+      <form class="search-form" id="search-form">
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Ask about ingredients, insert a recipe, or search for one..."
+          autocomplete="off"
+        >
+        <button type="submit">🔍 Search</button>
+      </form>
+
+      <div style="display: flex; gap: 12px; margin: 24px 0;">
+        <a href="/chat" class="ai-chat-btn" style="flex: 1; margin: 0;">
+          <span class="ai-chat-btn-icon">🤖</span>
+          <span>AI can recommend you a recipe</span>
+        </a>
+        <button class="add-recipe-btn" onclick="openAddRecipeModal()">
+          <span style="font-size: 24px;">➕</span>
+          <span>Add Recipe</span>
+        </button>
+      </div>
+
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">All Recipes</button>
+        <button class="filter-btn" data-filter="category" data-value="Beef">Beef</button>
+        <button class="filter-btn" data-filter="category" data-value="Chicken">Chicken</button>
+        <button class="filter-btn" data-filter="category" data-value="Dessert">Dessert</button>
+        <button class="filter-btn" data-filter="category" data-value="Lamb">Lamb</button>
+        <button class="filter-btn" data-filter="category" data-value="Miscellaneous">Miscellaneous</button>
+        <button class="filter-btn" data-filter="category" data-value="Pasta">Pasta</button>
+        <button class="filter-btn" data-filter="category" data-value="Pork">Pork</button>
+        <button class="filter-btn" data-filter="category" data-value="Seafood">Seafood</button>
+        <button class="filter-btn" data-filter="category" data-value="Side">Side</button>
+        <button class="filter-btn" data-filter="category" data-value="Starter">Starter</button>
+        <button class="filter-btn" data-filter="category" data-value="Vegan">Vegan</button>
+        <button class="filter-btn" data-filter="category" data-value="Vegetarian">Vegetarian</button>
+        <button class="filter-btn" data-filter="category" data-value="Breakfast">Breakfast</button>
+        <button class="filter-btn" data-filter="category" data-value="Goat">Goat</button>
+      </div>
+    </div>
+
+    <div id="recipes-container">
+      <div class="loading">Loading recipes...</div>
+    </div>
+  </div>
+
+  <!-- Recipe Detail Modal -->
+  <div class="modal" id="recipe-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <h2 class="modal-title" id="modal-title"></h2>
+        <div class="recipe-meta" id="modal-meta"></div>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <div class="loading">Loading recipe details...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentFilter = 'all';
+    let currentQuery = '';
+
+    // Load stats on page load
+    async function loadStats() {
+      try {
+        const resp = await fetch('/api/stats');
+        const stats = await resp.json();
+        document.getElementById('stat-recipes').textContent = stats.total_recipes || 0;
+        document.getElementById('stat-categories').textContent = stats.total_categories || 0;
+        document.getElementById('stat-countries').textContent = stats.total_countries || 0;
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    // Load recipes
+    async function loadRecipes(filter = 'all', value = '', query = '') {
+      const container = document.getElementById('recipes-container');
+      container.innerHTML = '<div class="loading">Loading recipes...</div>';
+
+      try {
+        let url = '/api/recipes?limit=50';
+        let recipes = [];
+        let message = '';
+        
+        if (query) {
+          // Use intelligent search for queries
+          const resp = await fetch('/api/intelligent-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query })
+          });
+          const data = await resp.json();
+          
+          // Handle ingredient info response
+          if (data.type === 'ingredient_info') {
+            container.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-icon">🌿</div>
+                <h3>${data.data.name}</h3>
+                <p style="max-width: 600px; margin: 20px auto; line-height: 1.8;">${data.data.description}</p>
+              </div>
+            `;
+            return;
+          }
+          
+          // Handle no results
+          if (data.type === 'no_results') {
+            container.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h3>No results found</h3>
+                <p>${data.message}</p>
+              </div>
+            `;
+            return;
+          }
+          
+          // Handle recipe list
+          recipes = data.data || [];
+          message = data.message || '';
+        } else if (filter === 'category' && value) {
+          url = `/api/recipes/by-category/${encodeURIComponent(value)}?limit=50`;
+          const resp = await fetch(url);
+          const data = await resp.json();
+          recipes = data.results || data;
+        } else if (filter === 'country' && value) {
+          url = `/api/recipes/by-country/${encodeURIComponent(value)}?limit=50`;
+          const resp = await fetch(url);
+          const data = await resp.json();
+          recipes = data.results || data;
+        } else {
+          const resp = await fetch(url);
+          const data = await resp.json();
+          recipes = data.results || data;
+        }
+
+        if (!recipes || recipes.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">🍴</div>
+              <h3>No recipes found</h3>
+              <p>Try a different search or filter</p>
+            </div>
+          `;
+          return;
+        }
+
+        const grid = document.createElement('div');
+        grid.className = 'recipes-grid';
+
+        recipes.forEach(recipe => {
+          const card = document.createElement('div');
+          card.className = 'recipe-card';
+          card.onclick = () => showRecipeDetail(recipe.id);
+
+          card.innerHTML = `
+            <img 
+              src="${recipe.thumbnail_url || '/static/placeholder.jpg'}" 
+              alt="${recipe.name}"
+              class="recipe-image"
+              onerror="this.src='/static/placeholder.jpg'"
+            >
+            <div class="recipe-content">
+              <div class="recipe-title">${recipe.name}</div>
+              <div class="recipe-meta">
+                ${recipe.category ? `<span class="recipe-tag">🍽️ ${recipe.category}</span>` : ''}
+                ${recipe.area ? `<span class="recipe-tag">🌍 ${recipe.area}</span>` : ''}
+              </div>
+            </div>
+          `;
+
+          grid.appendChild(card);
+        });
+
+        container.innerHTML = '';
+        container.appendChild(grid);
+
+      } catch (err) {
+        console.error('Failed to load recipes:', err);
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">⚠️</div>
+            <h3>Failed to load recipes</h3>
+            <p>${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Show recipe detail modal
+    async function showRecipeDetail(recipeId) {
+      const modal = document.getElementById('recipe-modal');
+      const modalBody = document.getElementById('modal-body');
+      const modalTitle = document.getElementById('modal-title');
+      const modalMeta = document.getElementById('modal-meta');
+
+      modal.classList.add('show');
+      modalBody.innerHTML = '<div class="loading">Loading recipe details...</div>';
+
+      try {
+        const resp = await fetch(`/api/recipes/${recipeId}`);
+        const recipe = await resp.json();
+
+        modalTitle.textContent = recipe.name;
+        modalMeta.innerHTML = `
+          ${recipe.category ? `<span class="recipe-tag">🍽️ ${recipe.category}</span>` : ''}
+          ${recipe.area ? `<span class="recipe-tag">🌍 ${recipe.area}</span>` : ''}
+        `;
+
+        // Instructions first
+        let instructionsHtml = '';
+        if (recipe.instructions) {
+          instructionsHtml = `
+            <h3>INSTRUCTIONS</h3>
+            <div class="instructions">${recipe.instructions}</div>
+            <hr style="border: none; border-top: 2px solid var(--border); margin: 30px 0;">
+          `;
+        }
+
+        // Then ingredients
+        let ingredientsHtml = '';
+        if (recipe.ingredients && recipe.ingredients.length > 0) {
+          ingredientsHtml = `
+            <h3>Ingredients</h3>
+            <div class="ingredients-list">
+              ${recipe.ingredients.map(ing => `
+                <div class="ingredient-item">
+                  - ${ing.ingredient} : ${ing.measure}
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        let linksHtml = '';
+        if (recipe.youtube_url || recipe.source_url) {
+          linksHtml = `
+            <div style="margin-top: 20px;">
+              ${recipe.youtube_url ? `<a href="${recipe.youtube_url}" target="_blank" style="color: var(--accent); margin-right: 20px;">🎥 Watch Video</a>` : ''}
+              ${recipe.source_url ? `<a href="${recipe.source_url}" target="_blank" style="color: var(--accent);">🔗 Source</a>` : ''}
+            </div>
+          `;
+        }
+
+        modalBody.innerHTML = instructionsHtml + ingredientsHtml + linksHtml;
+
+      } catch (err) {
+        console.error('Failed to load recipe details:', err);
+        modalBody.innerHTML = '<div class="empty-state"><h3>Failed to load recipe</h3></div>';
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('recipe-modal').classList.remove('show');
+    }
+
+    // Close modal on background click
+    document.getElementById('recipe-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'recipe-modal') {
+        closeModal();
+      }
+    });
+
+    // Search form
+    document.getElementById('search-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const query = document.getElementById('search-input').value.trim();
+      currentQuery = query;
+      currentFilter = 'search';
+      loadRecipes('search', '', query);
+
+      // Reset filter buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+    });
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const filter = btn.dataset.filter;
+        const value = btn.dataset.value || '';
+
+        currentFilter = filter;
+        currentQuery = '';
+        document.getElementById('search-input').value = '';
+
+        loadRecipes(filter, value);
+      });
+    });
+
+    // Initial load
+    loadStats();
+    loadRecipes();
+
+    // Add Recipe Modal Functions
+    function openAddRecipeModal() {
+      document.getElementById('add-recipe-modal').style.display = 'flex';
+    }
+
+    function closeAddRecipeModal() {
+      document.getElementById('add-recipe-modal').style.display = 'none';
+      document.getElementById('add-recipe-form').reset();
+    }
+
+    async function submitRecipe(event) {
+      event.preventDefault();
+      
+      const formData = {
+        name_meal: document.getElementById('recipe-name').value,
+        category: document.getElementById('recipe-category').value,
+        country: document.getElementById('recipe-country').value,
+        instructions: document.getElementById('recipe-instructions').value,
+        ingredient_measure: document.getElementById('recipe-ingredients').value,
+        image_recipe: document.getElementById('recipe-image').value,
+        video_recipe: document.getElementById('recipe-video').value,
+        source_url: document.getElementById('recipe-source').value
+      };
+
+      const submitBtn = document.getElementById('submit-recipe-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Adding...';
+
+      try {
+        const resp = await fetch('/api/recipes/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        const result = await resp.json();
+
+        if (resp.ok) {
+          alert(`✅ ${result.message}`);
+          closeAddRecipeModal();
+          loadRecipes();
+        } else {
+          let errorMsg = `❌ Error: ${result.error}`;
+          if (result.hint) {
+            errorMsg += `\n\n${result.hint}`;
+          }
+          alert(errorMsg);
+        }
+      } catch (error) {
+        alert(`❌ Failed to add recipe: ${error.message}`);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '✅ Add Recipe';
+      }
+    }
+  </script>
+
+  <!-- Add Recipe Modal -->
+  <div id="add-recipe-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto;">
+    <div style="background: var(--bg); border-radius: 16px; padding: 32px; max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto; margin: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="color: var(--text); margin: 0;">➕ Add New Recipe</h2>
+        <button onclick="closeAddRecipeModal()" style="background: none; border: none; font-size: 32px; color: var(--text-secondary); cursor: pointer; padding: 0; line-height: 1;">×</button>
+      </div>
+
+      <form id="add-recipe-form" onsubmit="submitRecipe(event)" style="display: flex; flex-direction: column; gap: 20px;">
+        <div>
+          <label style="display: block; color: var(--text); margin-bottom: 8px; font-weight: 600;">Recipe Name *</label>
+          <input id="recipe-name" type="text" required style="width: 100%; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px;" placeholder="Brigadeiro">
+        </div>
+
+        <div>
+          <label style="display: block; color: var(--text); margin-bottom: 8px; font-weight: 600;">Category *</label>
+          <select id="recipe-category" required style="width: 100%; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px;">
+            <option value="">Choose a category...</option>
+            <option value="Dessert">Dessert</option>
+            <option value="Beef">Beef</option>
+            <option value="Chicken">Chicken</option>
+            <option value="Lamb">Lamb</option>
+            <option value="Pork">Pork</option>
+            <option value="Seafood">Seafood</option>
+            <option value="Vegetarian">Vegetarian</option>
+            <option value="Vegan">Vegan</option>
+            <option value="Pasta">Pasta</option>
+            <option value="Starter">Starter</option>
+            <option value="Side">Side</option>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Goat">Goat</option>
+            <option value="Miscellaneous">Miscellaneous</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display: block; color: var(--text); margin-bottom: 8px; font-weight: 600;">Country *</label>
+          <input id="recipe-country" type="text" required style="width: 100%; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px;" placeholder="England">
+          <small style="color: var(--text-secondary); font-size: 13px;">The region will be automatically detected. Use country names (England, Italy, Brazil), not adjectives.</small>
+        </div>
+
+        <div>
+          <label style="display: block; color: var(--text); margin-bottom: 8px; font-weight: 600;">Instructions *</label>
+          <textarea id="recipe-instructions" required rows="5" style="width: 100%; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; resize: vertical;" placeholder="Step 1: Mix ingredients...\nStep 2: Cook for 10 minutes..."></textarea>
+        </div>
+
+        <div>
+          <label style="display: block; color: var(--text); margin-bottom: 8px; font-weight: 600;">Ingredients *</label>
+          <textarea id="recipe-ingredients" required rows="4" style="width: 100%; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; resize: vertical;" placeholder="Condensed milk - 1 can; Cocoa powder - 2 tbsp; Butter - 1 tbsp"></textarea>
+          <small style="color: var(--text-secondary); font-size: 13px;">Format: <strong>Ingredient 1 - measure 1; Ingredient 2 - measure 2;</strong></small>
+        </div>
+
+        <div>
+          <label style="display: block; color: var(--text); margin-bottom: 8px; font-weight: 600;">Image URL</label>
+          <input id="recipe-image" type="url" style="width: 100%; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px;" placeholder="https://example.com/image.jpg">
+        </div>
+
+        <div>
+          <label style="display: block; color: var(--text); margin-bottom: 8px; font-weight: 600;">Video URL</label>
+          <input id="recipe-video" type="url" style="width: 100%; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px;" placeholder="https://youtube.com/watch?v=...">
+        </div>
+
+        <div>
+          <label style="display: block; color: var(--text); margin-bottom: 8px; font-weight: 600;">Source URL</label>
+          <input id="recipe-source" type="url" style="width: 100%; padding: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px;" placeholder="https://example.com/recipe">
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 8px;">
+          <button type="submit" id="submit-recipe-btn" style="flex: 1; padding: 16px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">✅ Add Recipe</button>
+          <button type="button" onclick="closeAddRecipeModal()" style="padding: 16px 32px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
