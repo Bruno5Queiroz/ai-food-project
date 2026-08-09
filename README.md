@@ -2,6 +2,10 @@
 
 An intelligent recipe discovery platform powered by **Databricks Apps**, **Lakebase (PostgreSQL)**, and **LLM-based agents**. The application combines semantic search with RAG (Retrieval-Augmented Generation) and an intelligent agent to provide recipe recommendations, ingredient information, and country-based filtering.
 
+Github Repository: https://github.com/Bruno5Queiroz/ai-food-project
+App Link Agent: https://app-food-7474652940132932.aws.databricksapps.com/
+App Link RAG: https://app-food-7474652940132932.aws.databricksapps.com/chat
+
 ---
 
 ## 🚀 Features
